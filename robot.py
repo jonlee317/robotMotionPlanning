@@ -17,6 +17,8 @@ class Robot(object):
 
         # Initialize all distance to goal as 99
         self.distance_to_goal = [[99 for i in range(maze_dim)] for j in range(maze_dim)]
+        self.found_goal = False
+        self.wall_updated = [[0 for i in range(maze_dim)] for j in range(maze_dim)]
 
     def next_move(self, sensors):
         '''
@@ -70,55 +72,79 @@ class Robot(object):
         if self.heading == 'up':
             if sensors[0] == 0 and west_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 8
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
                     self.walls[self.location[0]-1][self.location[1]] -= 2
+                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
             if sensors[1] == 0 and north_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 1
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]+1] -= 4
+                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
             if sensors[2] == 0 and east_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 2
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
                     self.walls[self.location[0]+1][self.location[1]] -= 8
+                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
         if self.heading == 'down':
             if sensors[0] == 0 and east_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 2
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
                     self.walls[self.location[0]+1][self.location[1]] -= 8
+                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
             if sensors[1] == 0 and south_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 4
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]-1] -= 1
+                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
             if sensors[2] == 0 and west_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 8
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
                     self.walls[self.location[0]-1][self.location[1]] -= 2
+                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
         if self.heading == 'left':
             if sensors[0] == 0 and south_wall ==1:
                 self.walls[self.location[0]][self.location[1]] -= 4
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]-1] -= 1
+                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
             if sensors[1] == 0 and west_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 8
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
                     self.walls[self.location[0]-1][self.location[1]] -= 2
+                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
             if sensors[2] == 0 and north_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 1
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]+1] -= 4
+                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
         if self.heading == 'right':
             if sensors[0] == 0 and north_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 1
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]+1] -= 4
+                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
             if sensors[1] == 0 and east_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 2
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
                     self.walls[self.location[0]+1][self.location[1]] -= 8
+                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
             if sensors[2] == 0 and south_wall == 1:
                 self.walls[self.location[0]][self.location[1]] -= 4
+                self.wall_updated[self.location[0]][self.location[1]] = 1
                 if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
                     self.walls[self.location[0]][self.location[1]-1] -= 1
+                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
 
         wall_bin_updated = np.binary_repr(self.walls[self.location[0]][self.location[1]], width=4)
         west_wall_updated = int(wall_bin_updated[0])
@@ -126,7 +152,7 @@ class Robot(object):
         east_wall_updated = int(wall_bin_updated[2])
         north_wall_updated = int(wall_bin_updated[3])
 
-        # Flood fill algorithm
+        # Flood fill algorithm after updating walls
         moves= [[-1,0], #west
                 [0,-1], #south
                 [1,0],  #east
@@ -171,6 +197,7 @@ class Robot(object):
                             next_list.append(next_move)
                             traveled[next_move[0]][next_move[1]] = 1
 
+        # Directions on where to move after calculating new distances to goal
         r_moves = [[-1,0],
                     [0,-1],
                     [1,0],
@@ -178,8 +205,10 @@ class Robot(object):
 
         move_list = []
         dist_list = []
+
         if self.heading == 'up' and not already_moved:
-            if self.location[1] >= 0 and self.location[1] < self.maze_dim-1:
+            print "hi i am in up section"
+            if self.location[1] >= 0 and self.location[1] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
                         movex = (self.location[0]+r_moves[i][0])
@@ -213,7 +242,7 @@ class Robot(object):
                 already_moved = True
 
         if self.heading == 'down' and not already_moved:
-            if self.location[1] >=0 and self.location[1] < self.maze_dim-1:
+            if self.location[1] >=0 and self.location[1] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
                         movex = (self.location[0]+r_moves[i][0])
@@ -246,7 +275,7 @@ class Robot(object):
                 already_moved = True
 
         if self.heading == 'left' and not already_moved:
-            if self.location[0] >= 0 and self.location[0] < self.maze_dim-1:
+            if self.location[0] >= 0 and self.location[0] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
                         movex = (self.location[0]+r_moves[i][0])
@@ -278,7 +307,7 @@ class Robot(object):
                 already_moved = True
 
         if self.heading == 'right' and not already_moved:
-            if self.location[0] >=0 and self.location[0] < self.maze_dim-1:
+            if self.location[0] >=0 and self.location[0] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
                         movex = (self.location[0]+r_moves[i][0])
@@ -308,18 +337,34 @@ class Robot(object):
                     rotation = 0
                     movement = -1
                 already_moved = True
+        print "----------------------------"
 
-        self.location = chosen_move
+        #print already_moved
+        
         print "distances"
         for item in self.distance_to_goal:
             print item
         print "\n wallz"
         for item in self.walls:
             print item
-        print "\n" 
-        print "location"
-        print self.location
         print "\nsensors"
         print sensors
+        print "\n" 
+
+        print "heading:"
+        print self.heading
+        print "\n"
+        print "location"
+        self.location = chosen_move
+        print self.location
+
+        print "\n"
+        """
+        if self.location == goal_e:
+            for i in range(len(self.wall_updated)):
+                for j in range(len(self.wall_updated)):
+                    if self.wall_updated[i][j] == 0 and self.walls[i][j] == 15:
+                        self.walls[i][j] = 0
+                        """
 
         return rotation, movement
