@@ -8,6 +8,15 @@ class Robot(object):
         provided based on common information, including the size of the maze
         the robot is placed in.
         '''
+        self.wall_costs = {'up': [8,1,2],
+                            'down': [2,4,8],
+                            'left': [4,8,1],
+                            'right': [1,2,4]
+                            }
+        self.bin_index = {'up': [0,3,2],
+                            'down': [2,1,0],
+                            'left': [1,0,3],
+                            'right':  [3,2,1]}
         self.location = [0, 0]
         self.heading = 'up'
         self.maze_dim = maze_dim
@@ -20,13 +29,98 @@ class Robot(object):
         self.found_goal = False
         self.wall_updated = [[0 for i in range(maze_dim)] for j in range(maze_dim)]
 
+    def check_limits(self, param1):
+        if int(param1) >=0 and int(param1) < self.maze_dim:
+            return True
+        else:
+            return False
+
+    def sense_wall(self, direction, sense):
+        if direction == 'up':
+            xparam1 = -1
+            xparam2 = 0 
+            xparam3 = 1
+            yparam1 = 0
+            yparam2 = 1
+            yparam3 = 0
+            opposite = 'down'
+            add_param1 = 1
+            add_param2 = 0
+        if direction == 'down':
+            xparam1 = 1
+            xparam2 = 0 
+            xparam3 = -1
+            yparam1 = 0
+            yparam2 = -1
+            yparam3 = 0
+            opposite = 'up'
+            add_param1 = -1
+            add_param2 = 0
+        if direction == 'left':
+            xparam1 = 0
+            xparam2 = -1 
+            xparam3 = 0
+            yparam1 = -1
+            yparam2 = 0
+            yparam3 = 1
+            opposite = 'right'
+            add_param1 = 0
+            add_param2 = 1
+        if direction == 'right':
+            xparam1 = 0
+            xparam2 = 1 
+            xparam3 = 0
+            yparam1 = 1
+            yparam2 = 0
+            yparam3 = -1
+            opposite = 'left'
+            add_param1 = 0
+            add_param2 = -1
+
+
+        left_sq_loc = self.walls[self.location[0]+xparam1*sense[0]][self.location[1]+yparam1*sense[0]]
+        front_sq_loc = self.walls[self.location[0]+xparam2*sense[1]][self.location[1]+yparam2*sense[1]]
+        right_sq_loc = self.walls[self.location[0]+xparam3*sense[2]][self.location[1]+yparam3*sense[2]]
+
+        left_add_x = self.location[0]+xparam1*sense[0]-add_param1
+        left_add_y = self.location[1]+yparam1*sense[0]-add_param2
+        front_add_x = self.location[0]+xparam2*sense[1]-add_param2
+        front_add_y = self.location[1]+yparam2*sense[1]+add_param1
+        right_add_x = self.location[0]+xparam3*sense[2]+add_param1
+        right_add_y = self.location[1]+yparam3*sense[2]+add_param2
+
+        if self.check_limits(left_add_x) and self.check_limits(left_add_y):
+            left_sq_plus_loc = self.walls[left_add_x][left_add_y]
+        if self.check_limits(front_add_x) and self.check_limits(front_add_y):
+            front_sq_plus_loc = self.walls[front_add_x][front_add_y]
+        if self.check_limits(right_add_x) and self.check_limits(right_add_y):
+            right_sq_plus_loc = self.walls[right_add_x][right_add_y]
+
+        far_left_walls = np.binary_repr(left_sq_loc, width=4)
+        far_front_walls = np.binary_repr(front_sq_loc, width=4)
+        far_right_walls = np.binary_repr(right_sq_loc, width=4)
+
+        if int(far_left_walls[self.bin_index[direction][0]]) == 1:
+            self.walls[self.location[0]+xparam1*sense[0]][self.location[1]+yparam1*sense[0]] -= self.wall_costs[direction][0]
+            if self.check_limits(left_add_x) and self.check_limits(left_add_y):
+                self.walls[left_add_x][left_add_y] -= self.wall_costs[opposite][0]
+
+        if int(far_front_walls[self.bin_index[direction][1]]) == 1:
+            self.walls[self.location[0]+xparam2*sense[1]][self.location[1]+yparam2*sense[1]] -= self.wall_costs[direction][1]
+            if self.check_limits(front_add_x) and self.check_limits(front_add_y):
+                self.walls[front_add_x][front_add_y] -= self.wall_costs[opposite][0]
+
+        if int(far_right_walls[self.bin_index[direction][0]]) == 1:
+            self.walls[self.location[0]+xparam3*sense[2]][self.location[1]+yparam3*sense[2]] -= self.wall_costs[direction][2]
+            if self.check_limits(right_add_x) and self.check_limits(right_add_y):
+                self.walls[right_add_x][right_add_y] -= self.wall_costs[opposite][0]
+
     def next_move(self, sensors):
         '''
         Use this function to determine the next move the robot should make,
         based on the input from the sensors after its previous move. Sensor
         inputs are a list of three distances from the robot's left, front, and
         right-facing sensors, in that order.
-
         Outputs should be a tuple of two values. The first value indicates
         robot rotation (if any), as a number: 0 for no rotation, +90 for a
         90-degree rotation clockwise, and -90 for a 90-degree rotation
@@ -36,7 +130,6 @@ class Robot(object):
         movement, while a negative number indicates backwards movement. The
         robot may move a maximum of three units per turn. Any excess movement
         is ignored.
-
         If the robot wants to end a run (e.g. during the first training run in
         the maze) then returing the tuple ('Reset', 'Reset') will indicate to
         the tester to end the run and return the robot to the start.
@@ -56,95 +149,14 @@ class Robot(object):
         # update walls
         # note that I had to invert the north and south since the array is facing opposite direction
         # converting the current wall status into a binary form
-        wall_bin = np.binary_repr(self.walls[self.location[0]][self.location[1]], width=4)
-
-        west_wall = int(wall_bin[0])
-        south_wall = int(wall_bin[1])
-        east_wall = int(wall_bin[2])
-        north_wall = int(wall_bin[3])
-
-        #  just some temporary notes
-        #west_adjacent = self.walls[self.location[0]-1][self.location[1]]
-        #south_adjacent = self.walls[self.location[0]][self.location[1]-1]
-        #east_adjacent = self.walls[self.location[0]+1][self.location[1]]
-        #north_adjacent = self.walls[self.location[0]][self.location[1]+1]
-
         if self.heading == 'up':
-            if sensors[0] == 0 and west_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 8
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
-                    self.walls[self.location[0]-1][self.location[1]] -= 2
-                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
-            if sensors[1] == 0 and north_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 1
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]+1] -= 4
-                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
-            if sensors[2] == 0 and east_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 2
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
-                    self.walls[self.location[0]+1][self.location[1]] -= 8
-                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
+            self.sense_wall('up', sensors)
         if self.heading == 'down':
-            if sensors[0] == 0 and east_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 2
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
-                    self.walls[self.location[0]+1][self.location[1]] -= 8
-                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
-            if sensors[1] == 0 and south_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 4
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]-1] -= 1
-                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
-            if sensors[2] == 0 and west_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 8
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
-                    self.walls[self.location[0]-1][self.location[1]] -= 2
-                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
-        if self.heading == 'left':
-            if sensors[0] == 0 and south_wall ==1:
-                self.walls[self.location[0]][self.location[1]] -= 4
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]-1] -= 1
-                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
-            if sensors[1] == 0 and west_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 8
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]-1 >=0 and self.location[0]-1 < (self.maze_dim):
-                    self.walls[self.location[0]-1][self.location[1]] -= 2
-                    self.wall_updated[self.location[0]-1][self.location[1]] = 1
-            if sensors[2] == 0 and north_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 1
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]+1] -= 4
-                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
-        if self.heading == 'right':
-            if sensors[0] == 0 and north_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 1
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]+1 >=0 and self.location[1]+1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]+1] -= 4
-                    self.wall_updated[self.location[0]][self.location[1]+1] = 1
-            if sensors[1] == 0 and east_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 2
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[0]+1 >=0 and self.location[0]+1 < (self.maze_dim):
-                    self.walls[self.location[0]+1][self.location[1]] -= 8
-                    self.wall_updated[self.location[0]+1][self.location[1]] = 1
-            if sensors[2] == 0 and south_wall == 1:
-                self.walls[self.location[0]][self.location[1]] -= 4
-                self.wall_updated[self.location[0]][self.location[1]] = 1
-                if self.location[1]-1 >=0 and self.location[1]-1 < (self.maze_dim):
-                    self.walls[self.location[0]][self.location[1]-1] -= 1
-                    self.wall_updated[self.location[0]][self.location[1]-1] = 1
+            self.sense_wall('down', sensors)
+        if self.heading =='left':
+            self.sense_wall('left', sensors)
+        if self.heading =='right':
+            self.sense_wall('right', sensors)
 
         wall_bin_updated = np.binary_repr(self.walls[self.location[0]][self.location[1]], width=4)
         west_wall_updated = int(wall_bin_updated[0])
@@ -296,6 +308,7 @@ class Robot(object):
                 if deltax == 1 and deltay == 0:
                     rotation = 0
                     movement = -1
+                    print "moving backwards from the left"
                 if deltax == 0 and deltay == -1:
                     movement = 1
                     rotation = -90
