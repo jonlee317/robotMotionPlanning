@@ -37,12 +37,16 @@ class Robot(object):
         else:
             return False
 
-    def choose_new_goal(self):
-        newx = np.random.randint(self.maze_dim)
-        newy = np.random.randint(self.maze_dim)
-        while self.wall_updated[newx][newy] == 1 and np.sum(self.wall_updated) != (int(self.maze_dim)*int(self.maze_dim)):
-            newx = np.random.randint(self.maze_dim)
-            newy = np.random.randint(self.maze_dim)
+    def choose_new_goal(self, my_list):
+        sorted_list = sorted(my_list,reverse=True)
+        chosen_item = sorted_list.pop(0)
+        newx=chosen_item[0]
+        newy=chosen_item[1]
+        #newx = np.random.randint(1,self.maze_dim-1)
+        ##newy = np.random.randint(1,self.maze_dim-1)
+        #while self.wall_updated[newx][newy] == 1 and np.sum(self.wall_updated) != (int(self.maze_dim)*int(self.maze_dim)):
+        #    newx = np.random.randint(1,self.maze_dim-1)
+        #    newy = np.random.randint(1,self.maze_dim-1)
         return newx,newy
 
 
@@ -169,6 +173,8 @@ class Robot(object):
                 self.walls[right_add_x][right_add_y] -= self.wall_costs[opposite][2]
                 self.wall_updated[right_add_x][right_add_y] = 1
 
+
+
     def next_move(self, sensors):
         '''
         Use this function to determine the next move the robot should make,
@@ -223,13 +229,22 @@ class Robot(object):
         if self.location == self.chosen_goal:
             self.found_goal = True
 
+        new_list = []
         if self.found_goal == False:
             self.flood_fill(self.chosen_goal[0], self.chosen_goal[1])
         else:
-            newx,newy=self.choose_new_goal()
-            self.chosen_goal = [newx,newy]
-            self.flood_fill(self.chosen_goal[0],self.chosen_goal[1])
-            self.found_goal == False
+            for i in range(len(self.wall_updated)):
+                for j in range(len(self.wall_updated)):
+                    if self.wall_updated[i][j] == 0:
+                        print [i,j]
+                        new_list.append([i,j])
+            if len(new_list) > 0:
+                newx,newy=self.choose_new_goal(new_list)
+                self.chosen_goal = [newx,newy]
+                self.flood_fill(self.chosen_goal[0],self.chosen_goal[1])
+                self.found_goal == False
+            else:
+                print "done"
 
         # Directions on where to move after calculating new distances to goal
         r_moves = [[-1,0],
@@ -300,6 +315,7 @@ class Robot(object):
                 if deltax == 0 and deltay == 1:
                     rotation = -90
                     movement = 0
+                    self.wall_updated[self.location[0]][self.location[1]] = 1
                     self.heading = 'right'
                 if deltax == 1 and deltay == 0:
                     rotation = -90
@@ -340,6 +356,7 @@ class Robot(object):
                 if deltax == 1 and deltay == 0:
                     rotation = 90
                     movement = 0
+                    self.wall_updated[self.location[0]][self.location[1]] = 1
                     self.heading = 'up'
                 if deltax == 0 and deltay == -1:
                     rotation = -90
@@ -384,6 +401,7 @@ class Robot(object):
                 if deltax == -1 and deltay == 0:
                     rotation = -90
                     movement = 0
+                    self.wall_updated[self.location[0]][self.location[1]] = 1
                     self.heading = 'up'
                 already_moved = True
 
@@ -423,6 +441,9 @@ class Robot(object):
 
         # finally we set the goal back to it's intended location
         if self.count == 1000:
+            # closing all the unsearched openings incase they are fake openings
+
+
             self.flood_fill(self.maze_dim/2 - 1, self.maze_dim/2)
             print "final distances"
             for item in self.distance_to_goal:
