@@ -265,7 +265,6 @@ class Robot(object):
         dist_list = []
 
         if self.heading == 'up' and not already_moved and self.learned_path == False:
-            print "hi i am in up section"
             if self.location[1] >= 0 and self.location[1] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
@@ -421,14 +420,14 @@ class Robot(object):
         print "updated walls"
         for item in self.wall_updated:
             print item
-        
+        """
         print "distances"
         for item in self.distance_to_goal:
             print item
         print "\n wallz"
         for item in self.walls:
             print item 
-            """
+        """    """
         print "\nsensors"
         print sensors
         print "\n" 
@@ -450,11 +449,9 @@ class Robot(object):
         print "\n"
 
         # finally we set the goal back to it's intended location
-        
-
-
         if self.learned_path == True:
             robot_loc = self.location
+
             possible_moves = {'up': [[-1,0],
                                      [0,1],
                                      [1,0],
@@ -473,9 +470,47 @@ class Robot(object):
                                 }
 
             potential_move_list = []
+            #def check_moves(mult, move):
+            #    check_point = [robot_loc[0]+mult*possible_moves[self.heading][i][0],robot_loc[1]+mult*possible_moves[self.heading][i][1]]
+            #        if self.distance_to_goal[check_point[0]][check_point[1]] + 1*mult == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+            #            next_possible_move = [robot_loc[0]+mult*possible_moves[self.heading][i][0],robot_loc[1]+mult*possible_moves[self.heading][i][1],mult] 
+
 
             for i in range(len(possible_moves[self.heading])):
-                next_possible_move = [robot_loc[0]+possible_moves[self.heading][i][0],robot_loc[1]+possible_moves[self.heading][i][1]]
+                print "is this for loop working?"
+                print sensors[i]
+
+                if sensors[i] >= 3:
+                    print "hi i am in sensor greater than 3"
+                    dist_mult = 3
+                    check_point = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1]]
+                    if self.distance_to_goal[check_point[0]][check_point[1]] + 1*dist_mult == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+                        next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+                    else:
+                        dist_mult = 2
+                        check_point = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1]]
+                        if self.distance_to_goal[check_point[0]][check_point[1]] + 1*dist_mult == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+                            next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+                        else:
+                            dist_mult = 1
+                            next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+
+                elif sensors[i] == 2:
+                    dist_mult = 2
+                    check_point = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1]]
+                    if self.distance_to_goal[check_point[0]][check_point[1]] + 1*dist_mult == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+                        next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+                    else:
+                        dist_mult = 1
+                        next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+                elif sensors[i] == 1:
+                        dist_mult = 1
+                        check_point = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1]]
+                        next_possible_move = [robot_loc[0]+dist_mult*possible_moves[self.heading][i][0],robot_loc[1]+dist_mult*possible_moves[self.heading][i][1],dist_mult]
+                            
+                elif sensors[i] == 0:
+                    print "are we at sensor 0"
+                    next_possible_move = [robot_loc[0]+1*possible_moves[self.heading][i][0],robot_loc[1]+1*possible_moves[self.heading][i][1],1]
                 print 'Here is index'
                 print i
                 print "here is current move"
@@ -496,11 +531,10 @@ class Robot(object):
             print self.chosen_goal
 
             while len(potential_move_list) >0 and self.location != self.chosen_goal:
-                print "am i stuck here"
-                
                 the_chosen_one = potential_move_list.pop(0)
-                    
-                if self.distance_to_goal[the_chosen_one[0]][the_chosen_one[1]] + 1 == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+                print the_chosen_one
+
+                if self.distance_to_goal[the_chosen_one[0]][the_chosen_one[1]] + 1*the_chosen_one[2] == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
                     print "here is the chosen move"
                     print the_chosen_one
                     if self.already_chosen == False:
@@ -509,29 +543,33 @@ class Robot(object):
                     if self.heading == 'up' and self.already_moved == False:
                         dx = the_real_chosen_one[0]-self.location[0]
                         dy = the_real_chosen_one[1]-self.location[1]
-                        if dx == 0 and dy == 1:
+                        print "in the up section"
+                        print dx
+                        print dy
+                        if dx == 0 and dy == 1*the_real_chosen_one[2]:
                             print "******************************"
                             rotation = 0
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.already_moved = True
                             #break
 
-                        elif dx == 1 and dy == 0:
+                        elif dx == 1*the_real_chosen_one[2] and dy == 0:
+                            print "is this crap correct?"
                             rotation = 90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'right'
                             self.already_moved = True
                             #break
 
-                        elif dx == 0 and dy == -1:
+                        elif dx == 0 and dy == -1*the_real_chosen_one[2]:
                             rotation = 0
                             movement = -1
                             self.already_moved = True
                             #break
             
-                        elif dx == -1 and dy == 0:
+                        elif dx == -1*the_real_chosen_one[2] and dy == 0:
                             rotation = -90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'left'
                             self.already_moved = True
                             #break
@@ -539,25 +577,25 @@ class Robot(object):
                         dx = the_real_chosen_one[0]-self.location[0]
                         dy = the_real_chosen_one[1]-self.location[1]
 
-                        if dx == 0 and dy == 1:
+                        if dx == 0 and dy == 1*the_real_chosen_one[2]:
                             rotation = 0
                             movement = -1
                             self.already_moved = True
                             #break
-                        elif dx == 1 and dy == 0:
+                        elif dx == 1*the_real_chosen_one[2] and dy == 0:
                             rotation = -90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'right'
                             self.already_moved = True
                             #break
-                        elif dx == 0 and dy == -1:
+                        elif dx == 0 and dy == -1*the_real_chosen_one[2]:
                             rotation = 0
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.already_moved = True
                             #break
-                        elif dx == -1 and dy == 0:
+                        elif dx == -1*the_real_chosen_one[2] and dy == 0:
                             rotation = 90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'left'
                             self.already_moved = True
                             #break
@@ -565,27 +603,27 @@ class Robot(object):
                         dx = the_real_chosen_one[0]-self.location[0]
                         dy = the_real_chosen_one[1]-self.location[1]
 
-                        if dx == 0 and dy == 1:
+                        if dx == 0 and dy == 1*the_real_chosen_one[2]:
                             rotation = 90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'up'
                             self.already_moved = True
                             #break
 
-                        elif dx == 1 and dy == 0:
+                        elif dx == 1*the_real_chosen_one[2] and dy == 0:
                             rotation = 0
                             movement = -1
                             self.already_moved = True
                             #break
-                        elif dx == 0 and dy == -1:
+                        elif dx == 0 and dy == -1*the_real_chosen_one[2]:
                             rotation = -90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'down'
                             self.already_moved = True
                             #break
-                        elif dx == -1 and dy == 0:
+                        elif dx == -1*the_real_chosen_one[2] and dy == 0:
                             rotation = 0
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.already_moved = True
                             #break
                     elif self.heading == 'right' and self.already_moved == False:
@@ -596,26 +634,26 @@ class Robot(object):
                         print "this is dy in right"
                         print dy
 
-                        if dx == 0 and dy == 1:
+                        if dx == 0 and dy == 1*the_real_chosen_one[2]:
                             rotation = -90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'up'
                             print "or did i make it here?"
                             print "movement in here: " + str(movement)
                             self.already_moved = True
                             #break
-                        elif dx == 1 and dy == 0:
+                        elif dx == 1*the_real_chosen_one[2] and dy == 0:
                             rotation = 0
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.already_moved = True
                             #break
-                        elif dx == 0 and dy == -1:
+                        elif dx == 0 and dy == -1*the_real_chosen_one[2]:
                             rotation = 90
-                            movement = 1
+                            movement = 1*the_real_chosen_one[2]
                             self.heading = 'down'
                             self.already_moved = True
                             #break
-                        elif dx == -1 and dy == 0:
+                        elif dx == -1*the_real_chosen_one[2] and dy == 0:
                             rotation = 0
                             movement = -1
                             print "why am i here?"
