@@ -28,8 +28,14 @@ class Robot(object):
         self.distance_to_goal = [[99 for i in range(maze_dim)] for j in range(maze_dim)]
         self.found_goal = False
         self.wall_updated = [[0 for i in range(maze_dim)] for j in range(maze_dim)]
+        self.moved_to = [[0 for i in range(maze_dim)] for j in range(maze_dim)]
+        self.moved_to[self.location[0]][self.location[1]] = 1
         self.chosen_goal = [self.maze_dim/2 - 1, self.maze_dim/2]
         self.count = 0
+        self.learned_path = False
+        self.next_round = 0
+        self.already_moved = False
+        self.already_chosen = False
 
     def check_limits(self, param1):
         if int(param1) >=0 and int(param1) < self.maze_dim:
@@ -233,10 +239,13 @@ class Robot(object):
         if self.found_goal == False:
             self.flood_fill(self.chosen_goal[0], self.chosen_goal[1])
         else:
-            for i in range(len(self.wall_updated)):
-                for j in range(len(self.wall_updated)):
-                    if self.wall_updated[i][j] == 0:
+            # changing this to the moved to 
+            for i in range(len(self.moved_to)):
+                for j in range(len(self.moved_to)):
+                    if self.moved_to[i][j] == 0:
                         print [i,j]
+                        new_list.append([i,j])
+                    elif self.wall_updated[i][j] == 0:
                         new_list.append([i,j])
             if len(new_list) > 0:
                 newx,newy=self.choose_new_goal(new_list)
@@ -255,7 +264,7 @@ class Robot(object):
         move_list = []
         dist_list = []
 
-        if self.heading == 'up' and not already_moved:
+        if self.heading == 'up' and not already_moved and self.learned_path == False:
             print "hi i am in up section"
             if self.location[1] >= 0 and self.location[1] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
@@ -293,7 +302,7 @@ class Robot(object):
 
                 already_moved = True
 
-        if self.heading == 'down' and not already_moved:
+        if self.heading == 'down' and not already_moved and self.learned_path == False:
             if self.location[1] >=0 and self.location[1] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
@@ -331,7 +340,7 @@ class Robot(object):
 
                 already_moved = True
 
-        if self.heading == 'left' and not already_moved:
+        if self.heading == 'left' and not already_moved and self.learned_path == False:
             if self.location[0] >= 0 and self.location[0] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
@@ -368,7 +377,7 @@ class Robot(object):
 
                 already_moved = True
 
-        if self.heading == 'right' and not already_moved:
+        if self.heading == 'right' and not already_moved and self.learned_path == False:
             if self.location[0] >=0 and self.location[0] < self.maze_dim:
                 for i in range(len(wall_bin_updated)):
                     if int(wall_bin_updated[i]) == 1:
@@ -408,7 +417,7 @@ class Robot(object):
         #################### debug purposes ######################
         print "\n"
         print "\n"
-
+        """
         print "updated walls"
         for item in self.wall_updated:
             print item
@@ -418,7 +427,8 @@ class Robot(object):
             print item
         print "\n wallz"
         for item in self.walls:
-            print item
+            print item 
+            """
         print "\nsensors"
         print sensors
         print "\n" 
@@ -433,16 +443,195 @@ class Robot(object):
         print self.heading
         print "\n"
         print "location"
-        if movement == 1:
-            self.location = chosen_move
-        print self.location
+        #if movement == 1 and self.learned_path == False:
+        #    self.location = chosen_move
+        #print self.location
 
         print "\n"
 
         # finally we set the goal back to it's intended location
-        if self.count == 1000:
-            # closing all the unsearched openings incase they are fake openings
+        
 
+
+        if self.learned_path == True:
+            robot_loc = self.location
+            possible_moves = {'up': [[-1,0],
+                                     [0,1],
+                                     [1,0],
+                                     ],
+                               'down': [[1,0],
+                                     [0,-1],
+                                     [-1,0]],
+                               'left': [[0,-1],
+                                     [-1,0],
+                                     [0,1],
+                                     ],
+                               'right': [[0,1],
+                                     [1,0],
+                                     [0,-1],
+                                     ],
+                                }
+
+            potential_move_list = []
+
+            for i in range(len(possible_moves[self.heading])):
+                next_possible_move = [robot_loc[0]+possible_moves[self.heading][i][0],robot_loc[1]+possible_moves[self.heading][i][1]]
+                print 'Here is index'
+                print i
+                print "here is current move"
+                print self.location
+                print "here is my current heading"
+                print self.heading
+                print 'here is next move'
+                print next_possible_move
+                print 'here is sensor data'
+                print sensors[i]
+                if self.check_limits(next_possible_move[0]) and self.check_limits(next_possible_move[1]):
+                    if int(sensors[i]) != 0:
+                        potential_move_list.append(next_possible_move)
+
+            print "here are the potential moves"
+            print potential_move_list
+            print len(potential_move_list)
+            print self.chosen_goal
+
+            while len(potential_move_list) >0 and self.location != self.chosen_goal:
+                print "am i stuck here"
+                
+                the_chosen_one = potential_move_list.pop(0)
+                    
+                if self.distance_to_goal[the_chosen_one[0]][the_chosen_one[1]] + 1 == self.distance_to_goal[robot_loc[0]][robot_loc[1]]:
+                    print "here is the chosen move"
+                    print the_chosen_one
+                    if self.already_chosen == False:
+                        the_real_chosen_one = the_chosen_one
+                        self.already_chosen = True
+                    if self.heading == 'up' and self.already_moved == False:
+                        dx = the_real_chosen_one[0]-self.location[0]
+                        dy = the_real_chosen_one[1]-self.location[1]
+                        if dx == 0 and dy == 1:
+                            print "******************************"
+                            rotation = 0
+                            movement = 1
+                            self.already_moved = True
+                            #break
+
+                        elif dx == 1 and dy == 0:
+                            rotation = 90
+                            movement = 1
+                            self.heading = 'right'
+                            self.already_moved = True
+                            #break
+
+                        elif dx == 0 and dy == -1:
+                            rotation = 0
+                            movement = -1
+                            self.already_moved = True
+                            #break
+            
+                        elif dx == -1 and dy == 0:
+                            rotation = -90
+                            movement = 1
+                            self.heading = 'left'
+                            self.already_moved = True
+                            #break
+                    elif self.heading == 'down' and self.already_moved == False:
+                        dx = the_real_chosen_one[0]-self.location[0]
+                        dy = the_real_chosen_one[1]-self.location[1]
+
+                        if dx == 0 and dy == 1:
+                            rotation = 0
+                            movement = -1
+                            self.already_moved = True
+                            #break
+                        elif dx == 1 and dy == 0:
+                            rotation = -90
+                            movement = 1
+                            self.heading = 'right'
+                            self.already_moved = True
+                            #break
+                        elif dx == 0 and dy == -1:
+                            rotation = 0
+                            movement = 1
+                            self.already_moved = True
+                            #break
+                        elif dx == -1 and dy == 0:
+                            rotation = 90
+                            movement = 1
+                            self.heading = 'left'
+                            self.already_moved = True
+                            #break
+                    elif self.heading == 'left' and self.already_moved == False:
+                        dx = the_real_chosen_one[0]-self.location[0]
+                        dy = the_real_chosen_one[1]-self.location[1]
+
+                        if dx == 0 and dy == 1:
+                            rotation = 90
+                            movement = 1
+                            self.heading = 'up'
+                            self.already_moved = True
+                            #break
+
+                        elif dx == 1 and dy == 0:
+                            rotation = 0
+                            movement = -1
+                            self.already_moved = True
+                            #break
+                        elif dx == 0 and dy == -1:
+                            rotation = -90
+                            movement = 1
+                            self.heading = 'down'
+                            self.already_moved = True
+                            #break
+                        elif dx == -1 and dy == 0:
+                            rotation = 0
+                            movement = 1
+                            self.already_moved = True
+                            #break
+                    elif self.heading == 'right' and self.already_moved == False:
+                        dx = the_real_chosen_one[0]-self.location[0]
+                        dy = the_real_chosen_one[1]-self.location[1]
+                        print "this is dx in right"
+                        print dx
+                        print "this is dy in right"
+                        print dy
+
+                        if dx == 0 and dy == 1:
+                            rotation = -90
+                            movement = 1
+                            self.heading = 'up'
+                            print "or did i make it here?"
+                            print "movement in here: " + str(movement)
+                            self.already_moved = True
+                            #break
+                        elif dx == 1 and dy == 0:
+                            rotation = 0
+                            movement = 1
+                            self.already_moved = True
+                            #break
+                        elif dx == 0 and dy == -1:
+                            rotation = 90
+                            movement = 1
+                            self.heading = 'down'
+                            self.already_moved = True
+                            #break
+                        elif dx == -1 and dy == 0:
+                            rotation = 0
+                            movement = -1
+                            print "why am i here?"
+                            self.already_moved = True
+                            #break
+                        print "movement in right: " + str(movement)
+            #print "movement after while: " + str(movement)
+        #print "movement after learned: " + str(movement)
+        if np.sum(self.moved_to) == self.maze_dim*self.maze_dim and np.sum(self.wall_updated) == self.maze_dim*self.maze_dim and self.learned_path==False:
+            # closing all the unsearched openings incase they are fake openings
+            print "resetting positions"
+            rotation = 'Reset'
+            movement = 'Reset'
+            the_real_chosen_one = [0,0]
+            self.chosen_goal = [self.maze_dim/2 - 1, self.maze_dim/2]
+            self.heading = 'up'
 
             self.flood_fill(self.maze_dim/2 - 1, self.maze_dim/2)
             print "final distances"
@@ -452,4 +641,25 @@ class Robot(object):
             for item in self.walls:
                 print item
 
+            self.learned_path = True
+
+        if self.learned_path == False:
+            if movement == 1:
+                self.location = chosen_move
+        else:
+            self.location = the_real_chosen_one
+        print "is this the chosen one?"
+        print self.location
+        self.moved_to[self.location[0]][self.location[1]] = 1
+        #print "moved to"
+        #for item in self.moved_to:
+        #    print item
+
+
+        print "this is my rotation this run"
+        print rotation
+        print "this is my movement this run"
+        print movement
+        self.already_moved = False
+        self.already_chosen = False
         return rotation, movement
